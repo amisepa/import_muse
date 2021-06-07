@@ -16,4 +16,4 @@ Additionally, the plugin allows to import non-EEG channels: Accelerometer (ACC),
 See Wiki page for usage and examples.
 
 # Version history
-v1.0 - Plugin created and available - May 28, 2021
+v1.0 - Plugin created and available - June 7, 2021

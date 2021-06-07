@@ -4,7 +4,9 @@ This plugin imports Muse .csv files recorded with either the Mind Monitor App or
 
 This plugin automatically converts each Muse data type to the EEGLAB format for easy access to its advanced preprocessing and statistical tools (e.g. filtering, clean_rawdata, LIMO).
 
-Additionally, the plugin allows to import non-EEG channels: Accelerometer (ACC), Gyroscope (GYR), Photoplethysmogram (PPG), or Auxiliary (AUX). Users can choose which data channels they wish to import and if they wish to export it with the EEGLAB EEG structure (e.g. data were slightly transformed when necessary to allow time-locked analyses when sampling rates were different across channels), or as separate outputs (in EEGLAB structure format) for separate analyses.
+Additionally, the plugin allows users to import the following non-EEG channels: Accelerometer (ACC), Gyroscope (GYR), Photoplethysmogram (PPG), or Auxiliary (AUX). 
+
+Users can choose which data channels they wish to import and if they wish to export it with the EEGLAB EEG structure (e.g. data were resampled when sampling rates were different across channels), or as separate outputs (in EEGLAB structure format) for separate analyses. 
 
 # Graphic interface
 
@@ -13,7 +15,7 @@ Additionally, the plugin allows to import non-EEG channels: Accelerometer (ACC),
 
 # Usage
 
-See Wiki page for usage and examples.
+See Wiki (https://github.com/amisepa/import_muse/wiki) for usage and examples.
 
 # Version history
 v1.0 - Plugin created and available - June 7, 2021

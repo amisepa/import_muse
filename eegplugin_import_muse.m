@@ -30,7 +30,7 @@
 
 function vers = eegplugin_import_muse(fig, trystrs, catchstrs)
 
-vers = 'import_muse1.0';
+vers = 'import_muse';
 if nargin < 3
     error('eegplugin_import_muse requires 3 arguments');
 end

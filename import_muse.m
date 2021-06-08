@@ -5,13 +5,13 @@
 %   EEG = import_muse;           % pop-up GUI mode
 %   EEG = import_muse(file_path);   %Input filepath as command line and use import/export defaults
 %   EEG = import_muse(file_path, import_EEG, import_ACC, import_GYR, import_PPG, import_AUX, export_option);  % command line
-% 
-% Examples: 
+%
+% Examples:
 %   EEG = import_muse(file_path, 1, 1, 1, 0, 1, 2);                          %Import everything and export with EEG (Muse Monitor)
 %   EEG = import_muse(file_path, 1, 1, 1, 1, 0, 2);                          %Import everything and export with EEG (Muse Direct)
 %   [EEG, ACC, GYR, PPG, AUX] = import_muse(file_path, 1, 1, 1, 0, 1, 1);    %Import everything as separate outputs (Muse Monitor)
 %   [EEG, ACC, GYR, PPG, AUX] = import_muse(file_path, 1, 1, 1, 1, 0, 2);    %Import everything as separate outputs (Muse Direct)
-% 
+%
 % Optional input:
 %   file_path       - full path and name of the Muse file (e.g. 'path\file_name.csv')
 %   import_EEG      - Import EEG data (default ON = 1)
@@ -31,7 +31,7 @@
 %               PPG3 = red diode (blood flow)
 %   AUX     - Auxiliary electrode data
 %   com     - history string for command line
-% 
+%
 % Author: Cedric Cannard, CerCo, CNRS
 %
 % Copyright (C) 2021 Cedric Cannard
@@ -72,14 +72,14 @@ if nargin < 1
     opt = inputgui(uigeom, uilist, 'pophelp(''import_muse'')', 'Import Muse data -- import_muse()');
     if isempty(opt), return; end
     
-% Defaults
+    % Defaults
 elseif nargin < 7 && nargin > 1
-        opt{1} = 1;
-        opt{2} = 0;
-        opt{3} = 0;
-        opt{4} = 0;
-        opt{5} = 0;
-        opt{6} = 1;
+    opt{1} = 1;
+    opt{2} = 0;
+    opt{3} = 0;
+    opt{4} = 0;
+    opt{5} = 0;
+    opt{6} = 1;
 else
     opt = varargin;
 end
@@ -121,8 +121,9 @@ end
 
 %% EEG DATA
 
-%Get data
 varNames = varNames(2:end); %remove time column for indices to match data matrices
+EEG = [];
+
 if opt{1}
     if strcmp(rec_type, 'Muse_Monitor')     %muse_monitor1, 2, 3
         ind_eeg = contains(varNames, 'raw');
@@ -138,61 +139,63 @@ if opt{1}
         data(:,1) = [];
         eegData = table2array(data(:,ind_eeg));
     end
+    
+    
+    %Remove empty rows
+    nans = isnan(eegData(:,1));
+    eegData(nans,:) = [];
+    eegTime = Time;
+    eegTime(nans,:) = [];
+    
+    %Calculate sample rate and test stability
+    fprintf('Calculating EEG sampling rate and testing its stability...\n');
+    lags = second(eegTime);
+    diff_secs = find(logical(diff(round(lags))));
+    sRates = diff(diff_secs);
+    eeg_sRate = mode(sRates);
+    if std(sRates) > 1
+        warning(['EEG sample rate unstable and deviates up to ' num2str(round(std(sRates))) ...
+            ' samples/s across file. This is likely due to Bluetooth streaming and should not be an issue.'])
+    end
+    disp(['Sample rate detected: ' num2str(eeg_sRate) ' Hz']);
+    if eeg_sRate < 50 && strcmp(rec_type, 'Muse_Monitor')
+        warning(['Your sample rate was set to 1 sample/s in your Muse Monitor settings! ' ...
+            'It is highly recommended to set it to "Constant" (i.e. 256 Hz).']);
+    elseif eeg_sRate > 256
+        disp('Setting EEG sample rate to hardware specifications: 256 Hz')
+        eeg_sRate = 256;
+    end
+    
+    %Different method to test sample rate stability
+    % fprintf('Interpolating sampling rate and testing its stability...\n');
+    % nSamples = round(1./seconds(diff(eegTime)));      %time between each sample
+    % nSamples(isinf(nSamples)) = 0.001;                %convert inf values to 0.001
+    % sRate = round(mode(nSamples));                      % main sRate over file (in Hz)
+    % diff_sRates = unique(nSamples);                     %diffrent sample rates across file (in Hz)
+    % sRate_weight = round(sum(nSamples == sRate)/length(eegTime)*100,3);
+    % if 100 - sRate_weight > 1
+    %     warning([num2str(round(100-sRate_weight)) '% of samples have ' num2str(length(diff_sRates)) ' different sample rates! This is a serious problem from recording'])
+    %     warning('Using default sample rate of 256 Hz, but your data might be corrupted!');
+    %     sRate = 256;    %ADD SPECIFIC SRATE DEPENDING ON MUSE 1 < 2016 or MUSE 1 2016 or Muse 2
+    % elseif sRate < 128
+    %     warning('Sample rate interpolated from timestamps is too low (<128 Hz)! Using default sample rate of 256 Hz, but your data might be corrupted!');
+    %     sRate = 256;    %ADD SPECIFIC SRATE DEPENDING ON MUSE 1 < 2016 or MUSE 1 2016 or Muse 2
+    % end
+    
+    %EEGLAB STRUCTURE
+    EEG = eeg_emptyset;
+    EEG.chanlocs = struct('labels', {'TP9' 'AF7'   'AF8'   'TP10'});
+    % eegData = bsxfun(@minus, eegData, mean(eegData,1));   %substract mean
+    EEG.data = eegData';
+    EEG.srate = eeg_sRate;
+    EEG.pnts   = size(EEG.data,2);
+    EEG.nbchan = size(EEG.data,1);
+    EEG.xmin = 0;
+    EEG.trials = 1;
+    EEG.setname = ['EEG data (' rec_type ')'];
+    EEG = eeg_checkset(EEG);
+    
 end
-
-%Remove empty rows
-nans = isnan(eegData(:,1));
-eegData(nans,:) = [];
-eegTime = Time;
-eegTime(nans,:) = [];
-
-%Calculate sample rate and test stability
-fprintf('Calculating EEG sampling rate and testing its stability...\n');
-lags = second(eegTime);
-diff_secs = find(logical(diff(round(lags))));
-sRates = diff(diff_secs);
-eeg_sRate = mode(sRates);
-if std(sRates) > 1
-    warning(['EEG sample rate unstable and deviates up to ' num2str(round(std(sRates))) ...
-        ' samples/s across file. This is likely due to Bluetooth streaming and should not be an issue.'])
-end
-disp(['Sample rate detected: ' num2str(eeg_sRate) ' Hz']);
-if eeg_sRate < 50 && strcmp(rec_type, 'Muse_Monitor')
-    warning(['Your sample rate was set to 1 sample/s in your Muse Monitor settings! ' ...
-        'It is highly recommended to set it to "Constant" (i.e. 256 Hz).']);
-elseif eeg_sRate > 256
-    disp('Setting EEG sample rate to hardware specifications: 256 Hz')
-    eeg_sRate = 256;
-end
-
-%Different method to test sample rate stability
-% fprintf('Interpolating sampling rate and testing its stability...\n');
-% nSamples = round(1./seconds(diff(eegTime)));      %time between each sample
-% nSamples(isinf(nSamples)) = 0.001;                %convert inf values to 0.001
-% sRate = round(mode(nSamples));                      % main sRate over file (in Hz)
-% diff_sRates = unique(nSamples);                     %diffrent sample rates across file (in Hz)
-% sRate_weight = round(sum(nSamples == sRate)/length(eegTime)*100,3);
-% if 100 - sRate_weight > 1
-%     warning([num2str(round(100-sRate_weight)) '% of samples have ' num2str(length(diff_sRates)) ' different sample rates! This is a serious problem from recording'])
-%     warning('Using default sample rate of 256 Hz, but your data might be corrupted!');
-%     sRate = 256;    %ADD SPECIFIC SRATE DEPENDING ON MUSE 1 < 2016 or MUSE 1 2016 or Muse 2
-% elseif sRate < 128
-%     warning('Sample rate interpolated from timestamps is too low (<128 Hz)! Using default sample rate of 256 Hz, but your data might be corrupted!');
-%     sRate = 256;    %ADD SPECIFIC SRATE DEPENDING ON MUSE 1 < 2016 or MUSE 1 2016 or Muse 2
-% end
-
-%EEGLAB STRUCTURE
-EEG = eeg_emptyset;
-EEG.chanlocs = struct('labels', {'TP9' 'AF7'   'AF8'   'TP10'});
-% eegData = bsxfun(@minus, eegData, mean(eegData,1));   %substract mean
-EEG.data = eegData';
-EEG.srate = eeg_sRate;
-EEG.pnts   = size(EEG.data,2);
-EEG.nbchan = size(EEG.data,1);
-EEG.xmin = 0;
-EEG.trials = 1;
-EEG.setname = ['EEG data (' rec_type ')'];
-EEG = eeg_checkset(EEG);
 
 %% ACC
 
@@ -204,7 +207,7 @@ if opt{2}
     else                                    %muse_monitor1, 3, muse_direct2
         accData = table2array(data(:,ind_acc));
     end
-        
+    
     if opt{6} == 2           %Export as a separate output
         ACC = eeg_emptyset;
         ind = ~isnan(accData(:,1));
@@ -342,16 +345,16 @@ if opt{3}
             gyroData(nans,:) = [];    %Remove NaNs from eegData to match data length
         end
         
-%         %Transform data to match EEG amplitude
-%         amp_gyro = mean(gyroData,1);
-%         amp_eeg = mean(mean(EEG.data,2));
-%         for i = 1:length(amp_gyro)
-%             d(i) = (amp_eeg / amp_gyro(i)) / 5;
-%             gyroData(:,i) = bsxfun(@times, gyroData(:,i), d(i));
-%         end
-%         disp(['GYR_X amplitude was multiplied by ' num2str(d(1)) ' to match EEG data scale.']);
-%         disp(['GYR_Y amplitude was multiplied by ' num2str(d(2)) ' to match EEG data scale.']);
-%         disp(['GYR_Z amplitude was multiplied by ' num2str(d(3)) ' to match EEG data scale.']);
+        %         %Transform data to match EEG amplitude
+        %         amp_gyro = mean(gyroData,1);
+        %         amp_eeg = mean(mean(EEG.data,2));
+        %         for i = 1:length(amp_gyro)
+        %             d(i) = (amp_eeg / amp_gyro(i)) / 5;
+        %             gyroData(:,i) = bsxfun(@times, gyroData(:,i), d(i));
+        %         end
+        %         disp(['GYR_X amplitude was multiplied by ' num2str(d(1)) ' to match EEG data scale.']);
+        %         disp(['GYR_Y amplitude was multiplied by ' num2str(d(2)) ' to match EEG data scale.']);
+        %         disp(['GYR_Z amplitude was multiplied by ' num2str(d(3)) ' to match EEG data scale.']);
         
         %Add to EEG structure
         nChans = size(EEG.data,1);
@@ -422,25 +425,25 @@ if opt{4} && strcmp(rec_type, 'Muse_Direct')
         end
         ppgData(nans,:) = [];    %Remove NaNs from eegData to match data length
         
-%         %Transform data to match EEG amplitude
-%         amp_ppg = mean(ppgData,1);
-%         amp_eeg = mean(mean(EEG.data,2));
-%         for i = 1:length(amp_ppg)
-% %             if i == 1
-%                 d(i) = amp_ppg(i) / amp_eeg;
-%                 ppgData(:,i) = ppgData(:,i) ./ d(i);
-% %             else
-% %                 d(i) = (amp_ppg(i) / amp_eeg) / 10;
-% %                 ppgData(:,i) = ppgData(:,i) ./ d(i);
-% %             end
-%         end
-%         disp(['PPG1 amplitude was divided by ' num2str(d(1)) ' to match EEG data scale.']);
-%         disp(['PPG2 amplitude was divided by ' num2str(d(2)) ' to match EEG data scale.']);
-%         disp(['PPG3 amplitude was divided by ' num2str(d(3)) ' to match EEG data scale.']);
-
+        %         %Transform data to match EEG amplitude
+        %         amp_ppg = mean(ppgData,1);
+        %         amp_eeg = mean(mean(EEG.data,2));
+        %         for i = 1:length(amp_ppg)
+        % %             if i == 1
+        %                 d(i) = amp_ppg(i) / amp_eeg;
+        %                 ppgData(:,i) = ppgData(:,i) ./ d(i);
+        % %             else
+        % %                 d(i) = (amp_ppg(i) / amp_eeg) / 10;
+        % %                 ppgData(:,i) = ppgData(:,i) ./ d(i);
+        % %             end
+        %         end
+        %         disp(['PPG1 amplitude was divided by ' num2str(d(1)) ' to match EEG data scale.']);
+        %         disp(['PPG2 amplitude was divided by ' num2str(d(2)) ' to match EEG data scale.']);
+        %         disp(['PPG3 amplitude was divided by ' num2str(d(3)) ' to match EEG data scale.']);
+        
         %Add to EEG structure
         nChans = size(EEG.data,1);
-%         EEG.data(nChans+1:nChans+3,:) = (ppgData(:,3)-ppgData(:,1))';   %remove ambient light from PPG signal
+        %         EEG.data(nChans+1:nChans+3,:) = (ppgData(:,3)-ppgData(:,1))';   %remove ambient light from PPG signal
         EEG.data(nChans+1:nChans+3,:) = ppgData';
         EEG.chanlocs(nChans+1).labels = 'PPG1';     %ppg1 = sensor (recording continuously ambient light until diode is ON)
         EEG.chanlocs(nChans+2).labels = 'PPG2';     %ppg2 = IR (SPO2; i.e. oxygen concentration)
@@ -496,7 +499,7 @@ if opt{5} && strcmp(rec_type, 'Muse_Monitor')
 elseif opt{5} && strcmp(rec_type, 'Muse_Direct')
     error('Muse Direct does not record AUX data');
 end
-    
+
 %% History
 
 if opt{6} == 1

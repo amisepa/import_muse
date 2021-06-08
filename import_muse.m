@@ -257,16 +257,16 @@ if opt{2}
             accData(nans,:) = [];    %Remove NaNs from eegData to match data length
         end
         
-%         %Transform ACC data to match EEG amplitude
-%         amp_acc = mean(accData,1);
-%         amp_eeg = mean(mean(EEG.data,2));
-%         for i = 1:length(amp_acc)
-%             d(i) = amp_eeg / amp_acc(i) ;
-%             accData(:,i) = bsxfun(@times, accData(:,i), d(i));
-%         end
-%         disp(['ACC_X amplitude was multiplied by ' num2str(d(1)) ' to match EEG data scale.']);
-%         disp(['ACC_Y amplitude was multiplied by ' num2str(d(2)) ' to match EEG data scale.']);
-%         disp(['ACC_Z amplitude was multiplied by ' num2str(d(3)) ' to match EEG data scale.']);
+        %Transform ACC data to match EEG amplitude
+        amp_acc = mean(accData,1);
+        amp_eeg = mean(mean(EEG.data,2));
+        for i = 1:length(amp_acc)
+            d(i) = (amp_eeg / amp_acc(i)) / 3 ;
+            accData(:,i) = bsxfun(@times, accData(:,i), d(i));
+        end
+        disp(['ACC_X amplitude was multiplied by ' num2str(d(1)) ' to match EEG data scale.']);
+        disp(['ACC_Y amplitude was multiplied by ' num2str(d(2)) ' to match EEG data scale.']);
+        disp(['ACC_Z amplitude was multiplied by ' num2str(d(3)) ' to match EEG data scale.']);
         
         %Add to EEG structure
         nChans = size(EEG.data,1);

@@ -157,7 +157,7 @@ if std(sRates) > 1
         ' samples/s across file. This is likely due to Bluetooth streaming and should not be an issue.'])
 end
 disp(['Sample rate detected: ' num2str(eeg_sRate) ' Hz']);
-if eeg_sRate < 255 && strcmp(rec_type, 'Muse_Monitor')
+if eeg_sRate < 50 && strcmp(rec_type, 'Muse_Monitor')
     warning(['Your sample rate was set to 1 sample/s in your Muse Monitor settings! ' ...
         'It is highly recommended to set it to "Constant" (i.e. 256 Hz).']);
 elseif eeg_sRate > 256

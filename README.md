@@ -8,14 +8,43 @@ Additionally, the plugin allows users to import the following non-EEG channels: 
 
 Users can choose which data channels they wish to import and if they wish to export it with the EEGLAB EEG structure (e.g. data were resampled when sampling rates were different across channels), or as separate outputs (in EEGLAB structure format) for separate analyses. 
 
-# Graphic interface
+## Graphic interface
 
 ![image](https://user-images.githubusercontent.com/58382227/120024250-bb6d2980-bfa3-11eb-9980-6f6b1b87161f.png)
 
+![](https://github.com/amisepa/import_muse/blob/main/wiki/img30.png)
 
-# Command line usage
+![](https://github.com/amisepa/import_muse/blob/main/wiki/img35.png)
+
+
+## Usage
 
 See Wiki (https://github.com/amisepa/import_muse/wiki) for usage and examples.
 
-# Version history
+## Version history
 v1.0 - Plugin created and available - June 7, 2021
+
+## Interaxon's Muse specs
+
+Manufacturer website: https://choosemuse.com/muse-2/
+
+![](https://github.com/amisepa/import_muse/blob/main/wiki/img27.png)
+
+![](https://github.com/amisepa/import_muse/blob/main/wiki/img28.png)
+
+![](https://github.com/amisepa/import_muse/blob/main/wiki/img29.png)
+
+![](https://github.com/amisepa/import_muse/blob/main/wiki/img27.png)
+
+## Signal validation
+
+![](https://github.com/amisepa/import_muse/blob/main/wiki/img31.png)
+
+![](https://github.com/amisepa/import_muse/blob/main/wiki/img32.png)
+
+![](https://github.com/amisepa/import_muse/blob/main/wiki/img33.png)
+
+From Krigolson et al., 2017 (https://doi.org/10.3389/fnins.2017.00109): 
+![](https://github.com/amisepa/import_muse/blob/main/wiki/img34.png)
+
+

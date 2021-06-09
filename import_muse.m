@@ -55,6 +55,8 @@ com = '';
 if nargin < 1
     [fileName, filePath] = uigetfile2({'*.csv'}, 'Select Muse .csv file - import_muse()');
     file_path = fullfile(filePath, fileName);
+end
+if nargin < 2
     export_choice = {'With the EEG data (default)', 'As seperate outputs'};
     uilist = {
         {'style' 'checkbox' 'string' 'Import EEG data (TP9, AF7, AF8, TP10)' 'tag' 'eeg' 'value' 1 'enable' 'on' } ...
@@ -345,16 +347,16 @@ if opt{3}
             gyroData(nans,:) = [];    %Remove NaNs from eegData to match data length
         end
         
-        %         %Transform data to match EEG amplitude
-        %         amp_gyro = mean(gyroData,1);
-        %         amp_eeg = mean(mean(EEG.data,2));
-        %         for i = 1:length(amp_gyro)
-        %             d(i) = (amp_eeg / amp_gyro(i)) / 5;
-        %             gyroData(:,i) = bsxfun(@times, gyroData(:,i), d(i));
-        %         end
-        %         disp(['GYR_X amplitude was multiplied by ' num2str(d(1)) ' to match EEG data scale.']);
-        %         disp(['GYR_Y amplitude was multiplied by ' num2str(d(2)) ' to match EEG data scale.']);
-        %         disp(['GYR_Z amplitude was multiplied by ' num2str(d(3)) ' to match EEG data scale.']);
+        %Transform data to match EEG amplitude
+        amp_gyro = mean(gyroData,1);
+        amp_eeg = mean(mean(EEG.data,2));
+        for i = 1:length(amp_gyro)
+            d(i) = (amp_eeg / amp_gyro(i)) / 5;
+            gyroData(:,i) = bsxfun(@times, gyroData(:,i), d(i));
+        end
+        disp(['GYR_X amplitude was multiplied by ' num2str(d(1)) ' to match EEG data scale.']);
+        disp(['GYR_Y amplitude was multiplied by ' num2str(d(2)) ' to match EEG data scale.']);
+        disp(['GYR_Z amplitude was multiplied by ' num2str(d(3)) ' to match EEG data scale.']);
         
         %Add to EEG structure
         nChans = size(EEG.data,1);
@@ -425,33 +427,44 @@ if opt{4} && strcmp(rec_type, 'Muse_Direct')
         end
         ppgData(nans,:) = [];    %Remove NaNs from eegData to match data length
         
-        %         %Transform data to match EEG amplitude
-        %         amp_ppg = mean(ppgData,1);
-        %         amp_eeg = mean(mean(EEG.data,2));
-        %         for i = 1:length(amp_ppg)
-        % %             if i == 1
-        %                 d(i) = amp_ppg(i) / amp_eeg;
-        %                 ppgData(:,i) = ppgData(:,i) ./ d(i);
-        % %             else
-        % %                 d(i) = (amp_ppg(i) / amp_eeg) / 10;
-        % %                 ppgData(:,i) = ppgData(:,i) ./ d(i);
-        % %             end
-        %         end
-        %         disp(['PPG1 amplitude was divided by ' num2str(d(1)) ' to match EEG data scale.']);
-        %         disp(['PPG2 amplitude was divided by ' num2str(d(2)) ' to match EEG data scale.']);
-        %         disp(['PPG3 amplitude was divided by ' num2str(d(3)) ' to match EEG data scale.']);
+        %Correct signal by substracting ambient light from red diode signal
+        disp('Removing ambient light signal (PPG1) from blood flow signal (PP3)');
+        ppgData_corr = ppgData(:,3) - ppgData(:,1);
+        
+        %Adjust amplitude
+        amp_ppg = std(ppgData_corr);
+        amp_eeg = mean(std(EEG.data,[],2));
+        d = (amp_ppg/amp_eeg)/2;
+        ppgData_corr = ppgData_corr ./ d;
+
+%         amp_ppg = mean(ppgData,1);
+%         amp_eeg = mean(mean(EEG.data,2));
+%         for i = 1:length(amp_ppg)
+%             %             if i == 1
+%             d(i) = amp_ppg(i) / amp_eeg;
+%             ppgData(:,i) = ppgData(:,i) ./ d(i);
+%             %             else
+%             %                 d(i) = (amp_ppg(i) / amp_eeg) / 10;
+%             %                 ppgData(:,i) = ppgData(:,i) ./ d(i);
+%             %             end
+%         end
+%         disp(['PPG1 amplitude was divided by ' num2str(d(1)) ' to match EEG data scale.']);
+%         disp(['PPG2 amplitude was divided by ' num2str(d(2)) ' to match EEG data scale.']);
+%         disp(['PPG3 amplitude was divided by ' num2str(d(3)) ' to match EEG data scale.']);
         
         %Add to EEG structure
         nChans = size(EEG.data,1);
-        %         EEG.data(nChans+1:nChans+3,:) = (ppgData(:,3)-ppgData(:,1))';   %remove ambient light from PPG signal
-        EEG.data(nChans+1:nChans+3,:) = ppgData';
-        EEG.chanlocs(nChans+1).labels = 'PPG1';     %ppg1 = sensor (recording continuously ambient light until diode is ON)
-        EEG.chanlocs(nChans+2).labels = 'PPG2';     %ppg2 = IR (SPO2; i.e. oxygen concentration)
-        EEG.chanlocs(nChans+3).labels = 'PPG3';     %ppg3 = red diode (blood flow)
-        EEG.nbchan = EEG.nbchan+3;
+        EEG.data(nChans+1,:) = ppgData_corr';   %remove ambient light from PPG signal
+        EEG.chanlocs(nChans+1).labels = 'PPG';     %ppg1 = sensor (recording continuously ambient light until diode is ON)
+%         EEG.data(nChans+1:nChans+3,:) = ppgData';
+%         EEG.chanlocs(nChans+1).labels = 'PPG1';     %ppg1 = sensor (recording continuously ambient light until diode is ON)
+%         EEG.chanlocs(nChans+2).labels = 'PPG2';     %ppg2 = IR (SPO2; i.e. oxygen concentration)
+%         EEG.chanlocs(nChans+3).labels = 'PPG3';     %ppg3 = red diode (blood flow)
+%         EEG.nbchan = EEG.nbchan+3;
+        EEG.nbchan = EEG.nbchan+1;
         EEG = eeg_checkset(EEG);
     end
-    warning('For analysis: PPG1 (i.e. ambient light signal) needs to be substracted from PPG3 (i.e. the red diode signal measuring blood flow) to obtain the correct PPG signal');
+%     warning('For analysis: PPG1 (i.e. ambient light signal) needs to be substracted from PPG3 (i.e. the red diode signal measuring blood flow) to obtain the correct PPG signal');
     
 elseif opt{4} && strcmp(rec_type, 'Muse_Monitor')
     error('Muse Monitor does not record PPG data (let us know if this changes in an update of Muse Monitor)');
@@ -482,6 +495,13 @@ if opt{5} && strcmp(rec_type, 'Muse_Monitor')
         AUX = eeg_checkset(AUX);
         
     elseif opt{6} == 1   %Export with EEG structure
+        
+        %Adjust amplitude
+        amp_aux = std(auxData);
+        amp_eeg = mean(std(EEG.data,[],2));
+        d = amp_aux/amp_eeg;
+        auxData = auxData ./ d;
+            
         nChans = size(EEG.data,1);
         if size(auxData,2) == 1
             EEG.data(nChans+1,:) = auxData';

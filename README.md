@@ -1,12 +1,10 @@
 # import_muse EEGLAB plugin
 
-This plugin imports Muse .csv files recorded with either the Mind Monitor App or the Muse Direct App, and is compatible with data recorded with the Muse 1 (2014 and 2016), Muse 2, and Muse S.
+This plugin imports Muse .csv files recorded with either the Mind Monitor App or the Muse Direct App. Compatible with Muse 1 (2014 and 2016), Muse 2, and Muse S. Automatically converts data to the EEGLAB format. 
 
-This plugin automatically converts each Muse data type to the EEGLAB format for easy access to its advanced preprocessing and statistical tools (e.g. filtering, clean_rawdata, LIMO).
+Non-EEG channels (Accelerometer, Gyroscope, Photoplethysmogram, and Auxiliary) can be exported with the EEG data (resampled and slightly transformed to fit), or as separate outputs (raw, untouched). 
 
-Additionally, the plugin allows users to import the following non-EEG channels: Accelerometer (ACC), Gyroscope (GYR), Photoplethysmogram (PPG), or Auxiliary (AUX). 
-
-Users can choose which data channels they wish to import and if they wish to export it with the EEGLAB EEG structure (e.g. data were resampled when sampling rates were different across channels), or as separate outputs (in EEGLAB structure format) for separate analyses. 
+This plugin automatically converts each data type to the EEGLAB format, providing access to EEGLAB's advanced tools (e.g. filtering, clean_rawdata, LIMO).
 
 ## Graphic interface
 

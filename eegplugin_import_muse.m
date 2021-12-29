@@ -30,7 +30,9 @@
 
 function vers = eegplugin_import_muse(fig, trystrs, catchstrs)
 
-vers = 'import_muse';
+%plugin version
+vers = 'import_muse2.1';
+
 if nargin < 3
     error('eegplugin_import_muse requires 3 arguments');
 end
@@ -42,15 +44,11 @@ if ~exist('eegplugin_import_muse','dir')
     addpath(p);
 end
 
-%Find import data menu
+%Find menu to import data 
 menui = findobj(fig, 'tag', 'import data');
 
 %Menu callbacks
-% try
-% comcnt = [trystrs.no_check '[EEGTMP LASTCOM] = import_muse;'  catchstrs.new_non_empty];
-% catch
-comcnt = [trystrs.no_check '[EEGTMP ACCTMP GYRTMP PPGTMP AUXTMP LASTCOM] = import_muse;'  catchstrs.new_non_empty];
-% end
+comcnt = [trystrs.no_check '[EEG, LASTCOM] = import_muse;'  catchstrs.new_non_empty];
 
 %Create menus
 uimenu(menui, 'label', 'MUSE .csv file (from Mind Monitor or Muse Direct)', 'separator', 'on', 'callback', comcnt);

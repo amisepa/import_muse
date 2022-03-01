@@ -45,7 +45,6 @@
 
 function [EEG, com] = import_muse(file_path, varargin)
 
-% com = '';
 pop_editoptions('option_single', 0); % ensure double precision is switched on
 
 %% File path and name using pop-up window
@@ -121,21 +120,9 @@ lags = second(eegTime);
 diff_secs = find(logical(diff(round(lags))));
 sRates = diff(diff_secs);
 eeg_sRate = mode(sRates);
-if std(sRates) > 1
-    warning(['EEG sample rate unstable and deviates up to ' num2str(round(std(sRates))) ...
-        ' samples/s across file. This is likely due to Bluetooth streaming and should not be an issue.'])
-end
 disp(['Sample rate detected: ' num2str(eeg_sRate) ' Hz']);
-if eeg_sRate < 50 && strcmp(rec_type, 'muse_monitor')
-    warning(['Your sample rate was set to 1 sample/s in your Muse Monitor settings! ' ...
-        'It is highly recommended to set it to "Constant" (i.e. 256 Hz).']);
-elseif eeg_sRate > 256
-    disp('Setting EEG sample rate to hardware specifications: 256 Hz')
-    eeg_sRate = 256;
-end
 
 %Different method to test sample rate stability
-% fprintf('Interpolating sampling rate and testing its stability...\n');
 % nSamples = round(1./seconds(diff(eegTime)));      %time between each sample
 % nSamples(isinf(nSamples)) = 0.001;                %convert inf values to 0.001
 % sRate = round(mode(nSamples));                      % main sRate over file (in Hz)
@@ -156,15 +143,28 @@ EEG.chanlocs = struct('labels', {'TP9' 'AF7'   'AF8'   'TP10'});
 % eegData = bsxfun(@minus, eegData, mean(eegData,1));   %substract mean
 EEG.data = eegData';
 EEG.srate = eeg_sRate;
-% EEG.srate = 256;    %force sample rate to 256 Hz to avoid inconsistent srates (manufacturer spec)
 EEG.pnts   = size(EEG.data,2);
 EEG.nbchan = size(EEG.data,1);
 EEG.xmin = 0;
 EEG.trials = 1;
 EEG.setname = ['EEG data (' rec_type ')'];
 EEG = eeg_checkset(EEG);
+
+%resample if necessary (i.e., inconsistent sample rates across signal)
+if std(sRates) > 1
+    warning(['EEG sample rate unstable and deviates up to ' num2str(round(std(sRates))) ...
+        ' samples/s across file.'])
+end
+
+if eeg_sRate ~= 256
+    if strcmp(rec_type, 'muse_monitor')
+        warning(['Make sure the sample rate is set to "Constant" in your Muse Monitor settings! ']);
+    end
+    warning('Resampling to Manufacturer''s default 256 Hz');
+    EEG = pop_resample(EEG, sRate);
+end
+
 disp('EEG data were imported into EEGLAB.');
-% end
 
 %% Optional inputs (other signals)
 

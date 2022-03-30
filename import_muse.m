@@ -9,6 +9,7 @@
 %   file_path   - full path and name of the Muse file (e.g. 'file_path\file_name.csv')
 %
 % Optional inputs:
+%   'eeg'       - Import EEG data only
 %   'acc'       - Import accelerometer data (default OFF = 0)
 %   'gyr'       - Import gyrometer data (default OFF = 0)
 %   'ppg'       - Import photoplethysmogram (PPG) data (default OFF = 0; ONLY available with Muse 2 or S).
@@ -136,23 +137,11 @@ disp(['Sample rate detected: ' num2str(eeg_sRate) ' Hz']);
 %     sRate = 256;    %ADD SPECIFIC SRATE DEPENDING ON MUSE 1 < 2016 or MUSE 1 2016 or Muse 2
 % end
 
-%EEGLAB STRUCTURE
-EEG = eeg_emptyset;
-EEG.chanlocs = struct('labels', {'TP9' 'AF7'   'AF8'   'TP10'});
-% eegData = bsxfun(@minus, eegData, mean(eegData,1));   %substract mean
-EEG.data = eegData';
-EEG.srate = eeg_sRate;
-EEG.pnts   = size(EEG.data,2);
-EEG.nbchan = size(EEG.data,1);
-EEG.xmin = 0;
-EEG.trials = 1;
-EEG.setname = ['EEG data (' rec_type ')'];
-EEG = eeg_checkset(EEG);
 
 %% Optional inputs (other signals)
 
 %GUI
-if nargin < 2
+if nargin < 1
     uilist = {
         {'Style' 'text' 'string' 'Which other signals do you wish to import?'} ...
         {'style' 'checkbox' 'string' 'Accelerometer (ACC)' 'tag' 'acc' 'value' 0 'enable' 'on' } ...
@@ -171,13 +160,27 @@ if nargin < 2
 else
     opt = varargin;
     if nargin > 1
+%         if sum(contains(string(opt),'eeg')) == 1, params.eeg = 1; else, params.eeg = 0; end
         if sum(contains(string(opt),'acc')) == 1, params.acc = 1; else, params.acc = 0; end
         if sum(contains(string(opt),'gyr')) == 1, params.gyr = 1; else, params.gyr = 0; end
         if sum(contains(string(opt),'ppg')) == 1, params.ppg = 1; else, params.ppg = 0; end
         if sum(contains(string(opt),'aux')) == 1, params.aux = 1; else, params.aux = 0; end
     end
-
 end
+
+%% EEG
+
+EEG = eeg_emptyset;
+EEG.chanlocs = struct('labels', {'TP9' 'AF7'   'AF8'   'TP10'});
+% eegData = bsxfun(@minus, eegData, mean(eegData,1));   %substract mean
+EEG.data = eegData';
+EEG.srate = eeg_sRate;
+EEG.pnts   = size(EEG.data,2);
+EEG.nbchan = size(EEG.data,1);
+EEG.xmin = 0;
+EEG.trials = 1;
+EEG.setname = ['EEG data (' rec_type ')'];
+EEG = eeg_checkset(EEG);
 
 %% ACC
 

@@ -533,15 +533,12 @@ end
 
 disp('MUSE data were imported into EEGLAB.');
 
-%% Remove DC offset by removing DC component
-
-disp('Removing DC offset...');
-for iChan = 1:EEG.nbchan
-    ft = fft(EEG.data(iChan,:));
-    ft(1) = 0;  %zero out the DC component
-    EEG.data(iChan,:) = ifft(ft); % Inverse transform back to time domain.
-%     meanVal = mean(real(EEG.data(iChan,:))) % check: mean should now be close to zero.
-end
+%% Remove DC componenoffset
+ft = fft(EEG.data);
+ft(1) = 0; % Eliminate DC component so there will be no offset to the signal in the time domain.
+timeDomainSignal = ifft(ft); % Inverse transform back to time domain.
+% Compute the mean.  It should now be close to zero.
+meanValue = mean(real(timeDomainSignal))
 
 %% Command history
 if nargin < 2

@@ -449,8 +449,8 @@ if params.ppg && strcmp(rec_type, 'muse_direct')
     %     end
     %     warning('For analysis: PPG1 (i.e. ambient light signal) needs to be substracted from PPG3 (i.e. the red diode signal measuring blood flow) to obtain the correct PPG signal');
 
-elseif params.ppg && strcmp(rec_type, 'muse_monitor')
-    error('MindMonitor does not support PPG data and cannot be imported. Let us know if this is no longer the case: ccannard@protonmail.com');
+% elseif params.ppg && strcmp(rec_type, 'muse_monitor')
+%     error('MindMonitor does not support PPG data and cannot be imported. Let us know if this is no longer the case: ccannard@protonmail.com');
 end
 
 %% AUX
@@ -527,7 +527,7 @@ if eeg_sRate ~= 256
     if strcmp(rec_type, 'muse_monitor')
         disp('Make sure the sampling rate is set to "Constant" in the settings of your MindMonitor App!');
     end
-    warning('Resampling to 256 Hz (i.e., Manufacturer''s default sampling rate)');
+    warning('Forcing resampling at 256 Hz (i.e., Manufacturer''s default sampling rate)');
     EEG = pop_resample(EEG, 256);
 end
 
@@ -540,7 +540,9 @@ for iChan = 1:EEG.nbchan
     ft = fft(EEG.data(iChan,:));
     ft(1) = 0;  %zero out the DC component
     EEG.data(iChan,:) = ifft(ft); % Inverse transform back to time domain.
-%     meanVal = mean(real(EEG.data(iChan,:))) % check: mean should now be close to zero.
+%     if mean(real(EEG.data(iChan,:))) > .005 || mean(real(EEG.data(iChan,:))) < -.005
+%         warning('Check DC drift removal. Mean should be closer to 0')
+%     end
 end
 
 %% Command history

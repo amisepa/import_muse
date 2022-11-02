@@ -108,13 +108,13 @@ else                    %muse_monitor1, 3, muse_direct2
     eegData = table2array(data(:,ind_eeg));
 end
 
-%Remove empty rows
+% Remove empty rows
 nans = isnan(eegData(:,1));
 eegData(nans,:) = [];
 eegTime = Time;
 eegTime(nans,:) = [];
 
-%Calculate sample rate and test stability
+% Calculate sample rate and test stability
 fprintf('Calculating EEG sampling rate and testing its stability...\n');
 lags = second(eegTime);
 diff_secs = find(logical(diff(round(lags))));
@@ -122,7 +122,12 @@ sRates = diff(diff_secs);
 eeg_sRate = mode(sRates);
 disp(['Sample rate detected: ' num2str(eeg_sRate) ' Hz']);
 
-%Different method to test sample rate stability
+% if sample rate is too far (50 hz) from expected 256 Hz, cancel all actions (i.e., bad file)
+if abs(256-eeg_sRate) > 50
+    error('Bad file: sample rate is too far from manufacter''s default (i.e. 256 Hz)!')
+end
+
+% Different method to test sample rate stability
 % nSamples = round(1./seconds(diff(eegTime)));      %time between each sample
 % nSamples(isinf(nSamples)) = 0.001;                %convert inf values to 0.001
 % sRate = round(mode(nSamples));                      % main sRate over file (in Hz)
@@ -245,7 +250,7 @@ if params.acc
         accData(nans,:) = [];    %Remove NaNs from eegData to match data length
     end
 
-    %Transform ACC data to match EEG amplitude
+    % Transform ACC data to match EEG amplitude
     amp_acc = mean(accData,1);
     amp_eeg = mean(mean(EEG.data,2));
     for i = 1:length(amp_acc)
@@ -410,11 +415,11 @@ if params.ppg && strcmp(rec_type, 'muse_direct')
     end
     ppgData(nans,:) = [];    %Remove NaNs from eegData to match data length
 
-    %Correct signal by substracting ambient light from red diode signal
+    % Correct signal by substracting ambient light from red diode signal
     disp('Removing ambient light signal (PPG1) from blood flow signal (PP3)');
     ppgData_corr = ppgData(:,3) - ppgData(:,1);
 
-    %Adjust amplitude
+    % Adjust amplitude
     amp_ppg = std(ppgData_corr);
     amp_eeg = mean(std(EEG.data,[],2));
     d = (amp_ppg/amp_eeg)/2;

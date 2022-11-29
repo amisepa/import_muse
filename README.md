@@ -43,4 +43,7 @@ Manufacturer website: https://choosemuse.com/muse-2/
 From Krigolson et al., 2017 (https://doi.org/10.3389/fnins.2017.00109): 
 ![](https://github.com/amisepa/import_muse/blob/main/wiki/img34.png)
 
+Our validation for frequency domain, peak alpha frequency, and alpha asymmetry: 
+
+Cannard, C., Wahbeh, H., & Delorme, A. (2021, December). Validating the wearable MUSE headset for EEG spectral analysis and Frontal Alpha Asymmetry. In 2021 IEEE International Conference on Bioinformatics and Biomedicine (BIBM) (pp. 3603-3610). IEEE.
 

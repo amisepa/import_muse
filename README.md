@@ -32,8 +32,6 @@ Manufacturer website: https://choosemuse.com/muse-2/
 
 ![](https://github.com/amisepa/import_muse/blob/main/wiki/img29.png)
 
-![](https://github.com/amisepa/import_muse/blob/main/wiki/img30.png)
-
 ## Signal validation
 
 ![](https://github.com/amisepa/import_muse/blob/main/wiki/img31.png)

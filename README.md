@@ -47,3 +47,4 @@ Our validation for frequency domain, peak alpha frequency, and alpha asymmetry:
 
 Cannard, C., Wahbeh, H., & Delorme, A. (2021, December). Validating the wearable MUSE headset for EEG spectral analysis and Frontal Alpha Asymmetry. In 2021 IEEE International Conference on Bioinformatics and Biomedicine (BIBM) (pp. 3603-3610). IEEE.
 
+https://www.biorxiv.org/content/10.1101/2021.11.02.466989v1.full.pdf

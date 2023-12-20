@@ -124,7 +124,7 @@ disp(['Sample rate detected: ' num2str(eeg_sRate) ' Hz']);
 
 % if sample rate is too far (50 hz) from expected 256 Hz, cancel all actions (i.e., bad file)
 if abs(256-eeg_sRate) > 50
-    error(['Bad file: sample rate is too far from manufacter''s default: ' num2str(eeg_sRate) ' Hz'])
+    error('Sample rate = %g Hz --> far from manufacter''s default (256 Hz) ', num2str(eeg_sRate))
 end
 
 % Different method to test sample rate stability

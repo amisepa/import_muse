@@ -19,7 +19,18 @@ This plugin automatically converts each data type to the EEGLAB format, providin
 
 See Wiki (https://github.com/amisepa/import_muse/wiki) for usage and examples.
 
+## Flag bad channels using trained classifers
+
+< EEG = import_muse(filepath,'detectBadChan'); >
+
+The EEG signals in input must be raw (no prior preprocessing), and will be band-pass filtered by this function for best classification performance (but your EEG file output remains raw). The only parameter to change (maxTol) is how much of a channel should be 
+tolerated as bad before it is flagged as bad.
+For each window, some features are computed (RMS, SNR, low-frequency power), which were selected as most important by a Random Forest model during model training and validation. 
+
+Various ML models were trained and tested (decision trees, logistic regression, LDA, SVM, Naive Bayes, neural networks). They implement PCA-dimension reduction, hyperparameter tuning, and 5-fold cross-validation. Training was done on 80% of a dataset. After model validation, models were tested on the remaining 20% of data (different individuals). The best models achieved 93.5% for frontal channels (logistic regression) and 91.4% for the posterior channels (decision tree).
+
 ## Version history
+v1.1 - added trained classifiers to flag bad channels
 v1.0 - Plugin created and available - June 7, 2021
 
 ## Interaxon's Muse specs
@@ -32,7 +43,7 @@ Manufacturer website: https://choosemuse.com/muse-2/
 
 ![](https://github.com/amisepa/import_muse/blob/main/wiki/img29.png)
 
-## Signal validation
+## Signal validation (literature)
 
 ![](https://github.com/amisepa/import_muse/blob/main/wiki/img31.png)
 

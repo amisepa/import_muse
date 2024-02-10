@@ -553,8 +553,9 @@ disp('MUSE data were imported into EEGLAB.');
 %% Detect bad channels using trained classifiers
 
 disp("Scanning file to detect bad channels...")
-if contains(varargin, 'detectBadChan')
-    detectBadChan = true;
+idx = contains([ varargin{:}, 'detectBadChan');
+if any(idx)
+    detectBadChan = varargin{idx+1};
 else
     detectBadChan = false;
 end

@@ -6,6 +6,8 @@ Non-EEG channels (Accelerometer, Gyroscope, Photoplethysmogram, and Auxiliary) c
 
 This plugin automatically converts each data type to the EEGLAB format, providing access to EEGLAB's advanced tools (e.g. filtering, clean_rawdata, LIMO).
 
+If this plugin does not work for you, see also this other independent implementation for [importing Muse data](https://github.com/sccn/eeglab_musemonitor_plugin).
+
 ## Graphic interface
 
 ![image](https://user-images.githubusercontent.com/58382227/120024250-bb6d2980-bfa3-11eb-9980-6f6b1b87161f.png)

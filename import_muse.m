@@ -551,6 +551,8 @@ disp('MUSE data were imported into EEGLAB.');
 % end
 
 %% Detect bad channels using trained classifiers
+% Models trained on data filtered 1-50 Hz!!! this must be done on the fly
+% here or accuracy may drop. 
 
 disp("Scanning file to detect bad channels...")
 if contains(varargin, 'detectBadChan')

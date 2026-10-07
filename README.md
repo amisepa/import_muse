@@ -2,7 +2,11 @@
 
 EEGLAB plugin importing Muse .csv recordings from the **Mind Monitor**, **Muse Direct**, and **Muse Lab (OpenMuse)** Apps. Compatible with **Muse 1 (2014 & 2016), Muse 2, Muse S, and Muse S Athena** (including the Athena's raw optical/fNIRS data). Data are automatically converted to the EEGLAB format, giving access to EEGLAB's tools (filtering, ICA, clean_rawdata, LIMO...).
 
-Non-EEG channels (Accelerometer, Gyroscope, Photoplethysmogram, Auxiliary, and the Athena's optical fNIRS channels) can be imported along with the EEG data.
+Non-EEG channels (Accelerometer, Gyroscope, Photoplethysmogram, Auxiliary, and the Athena's optical fNIRS data) can be imported along with the EEG data.
+
+<p align="center">
+  <img src="docs/muse_s_athena.jpg" width="300" alt="Muse S Athena headband">
+</p>
 
 ## Graphic interface
 
@@ -19,7 +23,7 @@ Optional signal selection dialog:
 ```matlab
 EEG = import_muse;                               % GUI: select a file and the optional signals
 EEG = import_muse(filepath);                     % import EEG (command line)
-EEG = import_muse(filepath, 'optics');           % EEG + Athena fNIRS optical channels
+EEG = import_muse(filepath, 'optics');           % EEG + Athena fNIRS optical data
 EEG = import_muse(filepath, 'acc', 'gyr', 'aux', 'ppg'); % import everything
 EEG = import_muse(filepath, 'detectBadChan');    % EEG + flag/remove bad channels
 ```
@@ -42,17 +46,17 @@ Files containing only band power / session scores (no raw EEG) are rejected with
 1. Start EEGLAB, then import a file from the menu: **File → Import data → MUSE .csv file (from Mind Monitor or Muse Direct)**; pick the optional signals in the dialog (or skip the dialog and use the command line below).
 2. Browse the imported data: **Plot → Channel data (scroll)**. The 4 EEG channels (`TP9, AF7, AF8, TP10`) plus any optional channels you selected (ACC, GYR, PPG, AUX, fNIRS optics) appear in the EEGLAB structure.
 3. Preprocess as with any EEG dataset, e.g. filter 1–50 Hz (**Tools → Filter data → Basic FIR filter**), remove bad segments automatically (**Tools → Automatic data cleaning → clean_rawdata**), or run ICA (**Tools → Run ICA**).
-4. Flag bad channels with the trained classifiers: **Tools → MUSE bad-channel detection (scan_channels)** or `EEG = import_muse(filepath, 'detectBadChan');` (see next section).
+4. Flag bad channels with the trained classifiers: import with `EEG = import_muse(filepath, 'detectBadChan');`, or on an already imported EEG run `[badChan, badChanLabels] = scan_channels(EEG, 0.5, 1);` (see next section).
 5. Analyze heart signals: if you imported the PPG channel (Muse 2/S recorded with Muse Direct) or recorded ECG separately, use the [BrainBeats](https://github.com/amisepa/BrainBeats) EEGLAB plugin to process heartbeat-evoked potentials (HEP), extract EEG and HRV features (SDNN, RMSSD, LF/HF power...), remove heart artifacts from the EEG, and compute brain-heart coherence: [BrainBeats tutorial](https://eeglab.org/plugins/BrainBeats).
 
-## Athena optical (fNIRS) channels
+## Athena optical (fNIRS) data
 
-The Muse S Athena records optical (fNIRS/PPG) data at 64 Hz with 4, 8, or 16 channels depending on the preset. Channels are imported raw, named by sensor location and wavelength (Mind Monitor mapping):
+The Muse S Athena has a PPG/fNIRS optical sensor strip with 5 optodes over the left and right prefrontal cortex, recording at 64 Hz. Depending on the recording preset, the OPTICS packets contain 4, 8, or 16 data values per sample (wavelengths 730 nm, 850 nm, and red 660 nm, plus ambient-light readings). The plugin imports these values raw; when the full 16-value layout is present, channels are named by sensor position and wavelength (Mind Monitor mapping):
 
-- 16-channel: `LO_730, RO_730, LO_850, RO_850, LI_730, RI_730, LI_850, RI_850, LO_Red, RO_Red, LO_Amb, RO_Amb, LI_Red, RI_Red, LI_Amb, RI_Amb` (LO/LI = left outer/inner sensor, RO/RI = right outer/inner; 730/850 nm, Red 660 nm, Amb = ambient light)
-- 8-channel: inner + outer 730/850 nm
-- 4-channel: inner sensors only (`LI_730, RI_730, LI_850, RI_850`)
-- Other channel counts are imported as `Opt1...OptN`
+- 16 values: `LO_730, RO_730, LO_850, RO_850, LI_730, RI_730, LI_850, RI_850, LO_Red, RO_Red, LO_Amb, RO_Amb, LI_Red, RI_Red, LI_Amb, RI_Amb` (LO/LI = left outer/inner sensor, RO/RI = right outer/inner; Amb = ambient light)
+- 8 values: inner + outer 730/850 nm
+- 4 values: inner sensors only (`LI_730, RI_730, LI_850, RI_850`)
+- Other layouts are imported as `Opt1...OptN`
 
 When imported together with the EEG with the `'optics'` flag, optical channels are resampled (nearest-neighbor) onto the 256 Hz EEG time grid; optics-only files are returned at their native 64 Hz rate.
 
@@ -77,16 +81,6 @@ If you use this plugin, please cite the signal validation study:
 > Cannard, C., Wahbeh, H., & Delorme, A. (2021). Validating the wearable MUSE headset for EEG spectral analysis and Frontal Alpha Asymmetry. *2021 IEEE International Conference on Bioinformatics and Biomedicine (BIBM)*, 3603-3610. [https://doi.org/10.1109/BIBM52615.2021.9669778](https://ieeexplore.ieee.org/document/9669778)
 
 The study shows the MUSE can be used to examine power spectral density in all frequency bands, the individual alpha frequency, and frontal alpha asymmetry, with satisfying internal consistency reliability, compared to a research-grade 64-channel BIOSEMI system.
-
-## Interaxon's Muse specs
-
-Manufacturer website: https://choosemuse.com/muse-2/
-
-![Muse sensors](docs/img27.png)
-
-![Muse channels](docs/img28.png)
-
-![Muse headband](docs/img29.png)
 
 If this plugin does not work for you, see also this other independent implementation for [importing Muse data](https://github.com/sccn/eeglab_musemonitor_plugin).
 

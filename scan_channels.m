@@ -57,9 +57,7 @@ winSize = 5;   % should remain 5 seconds (same as for training)
 % end % size of sliding windows in s
 winSize = winSize * EEG.srate;          % convert to samples
 nSeg = floor(EEG.pnts/winSize);
-if isempty(maxTol)
-    maxTol = .5; 
-end
+if isempty(maxTol) || maxTol == 0, maxTol = .5; end
 if isempty(vis)
     vis = false; 
 end
@@ -72,7 +70,8 @@ b = design_fir(100,[2*[0 45 50]/EEG.srate 1],[1 1 0 0]);
 
 % Extract features
 badChan = false(1,EEG.nbchan);
-disp('Lookg for bad channels using trained models...')
+badSegs = false(EEG.nbchan, nSeg-1);
+disp('Looking for bad channels using trained models...')
 for iChan = 1:EEG.nbchan
     signal = EEG.data(iChan,:);
 
@@ -125,9 +124,9 @@ for iChan = 1:EEG.nbchan
         % Additional classification: if more than 50% of segment is flat
         flatPortion = sum( abs(diff(signal(tSeg)))<(20*eps) ) / (length(tSeg)-1);
         if flatPortion > .5
-            flatSeg(iWind,:) = true;  % 2 for bad
+            flatSeg(iWind,:) = true;  % flat = bad
         else
-            flatSeg(iWind,:) = false;  % 1 for good
+            flatSeg(iWind,:) = false; % not flat = good
         end
     end
     
@@ -139,8 +138,8 @@ for iChan = 1:EEG.nbchan
         prediction = trainedModelPost.predictFcn(features); % classify windows
     end
 
-    % Tag if good or bad
-    badSegs(iChan,:) = or(single(prediction) == 2, flatSeg);
+    % Tag if good or bad (classifiers output categorical '1' = good, '2' = bad)
+    badSegs(iChan,:) = or(prediction == '2', flatSeg);
     
     % Bad channels
     if sum(badSegs(iChan,:))/(nSeg-1) > maxTol

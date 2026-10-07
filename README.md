@@ -1,63 +1,98 @@
 # import_muse EEGLAB plugin
 
-This plugin imports Muse .csv files recorded with either the Mind Monitor App or the Muse Direct App. Compatible with Muse 1 (2014 and 2016), Muse 2, and Muse S. Automatically converts data to the EEGLAB format. 
+EEGLAB plugin importing Muse .csv recordings from the **Mind Monitor**, **Muse Direct**, and **Muse Lab (OpenMuse)** Apps. Compatible with **Muse 1 (2014 & 2016), Muse 2, Muse S, and Muse S Athena** (including the Athena's raw optical/fNIRS data). Data are automatically converted to the EEGLAB format, giving access to EEGLAB's tools (filtering, ICA, clean_rawdata, LIMO...).
 
-Non-EEG channels (Accelerometer, Gyroscope, Photoplethysmogram, and Auxiliary) can be exported with the EEG data (resampled and slightly transformed to fit), or as separate outputs (raw, untouched). 
-
-This plugin automatically converts each data type to the EEGLAB format, providing access to EEGLAB's advanced tools (e.g. filtering, clean_rawdata, LIMO).
-
-If this plugin does not work for you, see also this other independent implementation for [importing Muse data](https://github.com/sccn/eeglab_musemonitor_plugin).
+Non-EEG channels (Accelerometer, Gyroscope, Photoplethysmogram, Auxiliary, and the Athena's optical fNIRS channels) can be imported along with the EEG data.
 
 ## Graphic interface
 
-![image](https://user-images.githubusercontent.com/58382227/120024250-bb6d2980-bfa3-11eb-9980-6f6b1b87161f.png)
+Import menu: **File → Import data → MUSE .csv file (from Mind Monitor or Muse Direct)**
 
-![](https://github.com/amisepa/import_muse/blob/main/wiki/img30.png)
+![GUI import](docs/img30.png)
 
-![](https://github.com/amisepa/import_muse/blob/main/wiki/img35.png)
+Optional signal selection dialog:
 
+![Optional signals](docs/img35.png)
 
 ## Usage
 
-See Wiki (https://github.com/amisepa/import_muse/wiki) for usage and examples.
+```matlab
+EEG = import_muse;                               % GUI: select a file and the optional signals
+EEG = import_muse(filepath);                     % import EEG (command line)
+EEG = import_muse(filepath, 'optics');           % EEG + Athena fNIRS optical channels
+EEG = import_muse(filepath, 'acc', 'gyr', 'aux', 'ppg'); % import everything
+EEG = import_muse(filepath, 'detectBadChan');    % EEG + flag/remove bad channels
+```
 
-## Flag bad channels using trained classifers
+Supported file formats (auto-detected):
 
-< EEG = import_muse(filepath,'detectBadChan'); >
+| Recording app | File layout | EEG | Extras |
+|---|---|---|---|
+| Mind Monitor (Muse 1/2/S) | `TimeStamp` + `RAW_TP9...` + band powers | 256 Hz | ACC, GYR, AUX |
+| Muse Direct (Muse 1/2/S) | `timestamps` + `eeg_1..6` + band powers | 256 Hz | ACC, GYR, PPG |
+| Muse Direct (Muse S **Athena**) | `Timestamp`, `PacketType`, `Data` packets | 256 Hz | ACC, GYR, OPTICS (fNIRS) |
+| Muse Lab / OpenMuse (**Athena**) | `timestamp`, `osc_address`, `osc_type`, `osc_data` | 256 Hz | ACC, GYR, OPTICS |
+| Athena EEG export | `ts`, `TP9`, `AF7`, `AF8`, `TP10` | 256 Hz | — |
+| Athena optics export | `ts`, `ch1..ch16` | — | OPTICS only (64 Hz) |
 
-The EEG signals in input must be raw (no prior preprocessing), and will be band-pass filtered by this function for best classification performance (but your EEG file output remains raw). The only parameter to change (maxTol) is how much of a channel should be 
-tolerated as bad before it is flagged as bad.
-For each window, some features are computed (RMS, SNR, low-frequency power), which were selected as most important by a Random Forest model during model training and validation. 
+Files containing only band power / session scores (no raw EEG) are rejected with a clear error message.
 
-Various ML models were trained and tested (decision trees, logistic regression, LDA, SVM, Naive Bayes, neural networks). They implement PCA-dimension reduction, hyperparameter tuning, and 5-fold cross-validation. Training was done on 80% of a dataset. After model validation, models were tested on the remaining 20% of data (different individuals). The best models achieved 93.5% for frontal channels (logistic regression) and 91.4% for the posterior channels (decision tree).
+## Tutorial: basic steps
 
-## Version history
-v1.1 - added trained classifiers to flag bad channels
-v1.0 - Plugin created and available - June 7, 2021
+1. Start EEGLAB, then import a file from the menu: **File → Import data → MUSE .csv file (from Mind Monitor or Muse Direct)**; pick the optional signals in the dialog (or skip the dialog and use the command line below).
+2. Browse the imported data: **Plot → Channel data (scroll)**. The 4 EEG channels (`TP9, AF7, AF8, TP10`) plus any optional channels you selected (ACC, GYR, PPG, AUX, fNIRS optics) appear in the EEGLAB structure.
+3. Preprocess as with any EEG dataset, e.g. filter 1–50 Hz (**Tools → Filter data → Basic FIR filter**), remove bad segments automatically (**Tools → Automatic data cleaning → clean_rawdata**), or run ICA (**Tools → Run ICA**).
+4. Flag bad channels with the trained classifiers: **Tools → MUSE bad-channel detection (scan_channels)** or `EEG = import_muse(filepath, 'detectBadChan');` (see next section).
+5. Analyze heart signals: if you imported the PPG channel (Muse 2/S recorded with Muse Direct) or recorded ECG separately, use the [BrainBeats](https://github.com/amisepa/BrainBeats) EEGLAB plugin to process heartbeat-evoked potentials (HEP), extract EEG and HRV features (SDNN, RMSSD, LF/HF power...), remove heart artifacts from the EEG, and compute brain-heart coherence: [BrainBeats tutorial](https://eeglab.org/plugins/BrainBeats).
+
+## Athena optical (fNIRS) channels
+
+The Muse S Athena records optical (fNIRS/PPG) data at 64 Hz with 4, 8, or 16 channels depending on the preset. Channels are imported raw, named by sensor location and wavelength (Mind Monitor mapping):
+
+- 16-channel: `LO_730, RO_730, LO_850, RO_850, LI_730, RI_730, LI_850, RI_850, LO_Red, RO_Red, LO_Amb, RO_Amb, LI_Red, RI_Red, LI_Amb, RI_Amb` (LO/LI = left outer/inner sensor, RO/RI = right outer/inner; 730/850 nm, Red 660 nm, Amb = ambient light)
+- 8-channel: inner + outer 730/850 nm
+- 4-channel: inner sensors only (`LI_730, RI_730, LI_850, RI_850`)
+- Other channel counts are imported as `Opt1...OptN`
+
+When imported together with the EEG with the `'optics'` flag, optical channels are resampled (nearest-neighbor) onto the 256 Hz EEG time grid; optics-only files are returned at their native 64 Hz rate.
+
+## Flag bad channels using trained classifiers
+
+```matlab
+EEG = import_muse(filepath, 'detectBadChan');
+% or, on an already imported (raw, unfiltered) EEG:
+[badChan, badChanLabels] = scan_channels(EEG, 0.5, 1);
+```
+
+The input EEG must be raw (no prior preprocessing); it is band-pass filtered 1-50 Hz on the fly for classification (the output EEG remains raw). `maxTol` (second argument, default 0.5) is the portion of bad 5-s windows tolerated before a channel is flagged; with the default, up to half of the windows may be bad before the channel is removed - set it lower (e.g. 0.33) to be stricter.
+
+For each 5-s window, features are computed (RMS, SNR, low-frequency power, plus kurtosis and high-frequency power for the posterior channels), selected as most important by a Random Forest during model training.
+
+Various ML models were trained and tested (decision trees, logistic regression, LDA, SVM, Naive Bayes, neural networks) with PCA dimension reduction, hyperparameter tuning, and 5-fold cross-validation. Training used 80% of the dataset; the remaining 20% (different individuals) was used for testing. The best models reached 93.5% accuracy for the frontal channels (logistic regression) and 91.4% for the posterior channels (decision tree). The classifiers are conservative: on clean recordings they can still flag a channel, so verify the results with `scan_channels(EEG, maxTol, 1)` (visualization on) when in doubt.
+
+## Reference
+
+If you use this plugin, please cite the signal validation study:
+
+> Cannard, C., Wahbeh, H., & Delorme, A. (2021). Validating the wearable MUSE headset for EEG spectral analysis and Frontal Alpha Asymmetry. *2021 IEEE International Conference on Bioinformatics and Biomedicine (BIBM)*, 3603-3610. [https://doi.org/10.1109/BIBM52615.2021.9669778](https://ieeexplore.ieee.org/document/9669778)
+
+The study shows the MUSE can be used to examine power spectral density in all frequency bands, the individual alpha frequency, and frontal alpha asymmetry, with satisfying internal consistency reliability, compared to a research-grade 64-channel BIOSEMI system.
 
 ## Interaxon's Muse specs
 
 Manufacturer website: https://choosemuse.com/muse-2/
 
-![](https://github.com/amisepa/import_muse/blob/main/wiki/img27.png)
+![Muse sensors](docs/img27.png)
 
-![](https://github.com/amisepa/import_muse/blob/main/wiki/img28.png)
+![Muse channels](docs/img28.png)
 
-![](https://github.com/amisepa/import_muse/blob/main/wiki/img29.png)
+![Muse headband](docs/img29.png)
 
-## Signal validation (literature)
+If this plugin does not work for you, see also this other independent implementation for [importing Muse data](https://github.com/sccn/eeglab_musemonitor_plugin).
 
-![](https://github.com/amisepa/import_muse/blob/main/wiki/img31.png)
+## Version history
 
-![](https://github.com/amisepa/import_muse/blob/main/wiki/img32.png)
-
-![](https://github.com/amisepa/import_muse/blob/main/wiki/img33.png)
-
-From Krigolson et al., 2017 (https://doi.org/10.3389/fnins.2017.00109): 
-![](https://github.com/amisepa/import_muse/blob/main/wiki/img34.png)
-
-Our validation for frequency domain, peak alpha frequency, and alpha asymmetry: 
-
-Cannard, C., Wahbeh, H., & Delorme, A. (2021, December). Validating the wearable MUSE headset for EEG spectral analysis and Frontal Alpha Asymmetry. In 2021 IEEE International Conference on Bioinformatics and Biomedicine (BIBM) (pp. 3603-3610). IEEE.
-
-https://www.biorxiv.org/content/10.1101/2021.11.02.466989v1.full.pdf
+- v2.2 - Muse S Athena support (packet, OSC log, EEG-only, and optics-only exports; 4/8/16 fNIRS optical channels); rewritten file parsing and sampling rate detection (fixed Mind Monitor rate errors); hour rollover support for legacy MindMonitor files; fixed command-line import crash, classifier output handling, bad-channel flagging with extra channels, and ACC/GYR amplitude scaling
+- v2.1 - bug fixes
+- v1.1 - added trained classifiers to flag bad channels
+- v1.0 - Plugin created and available - June 7, 2021

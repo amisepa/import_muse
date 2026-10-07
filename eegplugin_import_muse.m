@@ -1,5 +1,5 @@
 % eegplugin_import_muse() - EEGLAB plugin for importing Muse data recorded
-%             with the Muse Monitor or Muse Direct Apps.
+%             with the Mind Monitor or Muse Direct Apps.
 %
 % Usage:
 %   >> eegplugin_import_muse(fig, trystrs, catchstrs);
@@ -11,7 +11,7 @@
 %
 % Author: Cedric Cannard, CerCo, CNRS
 %
-% Copyright (C) 2021 Cedric Cannard
+% Copyright (C) 2021-2026 Cedric Cannard
 %
 % This program is free software; you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
 function vers = eegplugin_import_muse(fig, trystrs, catchstrs)
 
 %plugin version
-vers = 'import_muse2.1';
+vers = 'import_muse2.2';
 
 if nargin < 3
     error('eegplugin_import_muse requires 3 arguments');
@@ -44,7 +44,7 @@ if ~exist('eegplugin_import_muse','dir')
     addpath(p);
 end
 
-%Find menu to import data 
+%Find menu to import data
 menui = findobj(fig, 'tag', 'import data');
 
 %Menu callbacks

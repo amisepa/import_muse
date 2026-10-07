@@ -208,7 +208,7 @@ if nargin < 1
         {'style' 'checkbox' 'string' 'Import optical fNIRS data (OPTICS; Muse S Athena only)' 'tag' 'optics' 'value' 0 'enable' 'on' } ...
         {} ...
         };
-    uigeom = { 1 1 1 1 1 1 };
+    uigeom = { 1 1 1 1 1 1 1 };
     opt = inputgui(uigeom, uilist, 'pophelp(''import_muse'')', ['Muse data recorded with ' rec_type]);
     if isempty(opt)
         EEG = []; com = '';   % user cancelled

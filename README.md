@@ -45,7 +45,7 @@ Files containing only band power / session scores (no raw EEG) are rejected with
 
 1. Start EEGLAB, then import a file from the menu: **File → Import data → MUSE .csv file (from Mind Monitor or Muse Direct)**; pick the optional signals in the dialog (or skip the dialog and use the command line below).
 2. Browse the imported data: **Plot → Channel data (scroll)**. The 4 EEG channels (`TP9, AF7, AF8, TP10`) plus any optional channels you selected (ACC, GYR, PPG, AUX, fNIRS optics) appear in the EEGLAB structure.
-3. Preprocess as with any EEG dataset, e.g. filter 1–50 Hz (**Tools → Filter data → Basic FIR filter**), remove bad segments automatically (**Tools → Automatic data cleaning → clean_rawdata**), or run ICA (**Tools → Run ICA**).
+3. Preprocess as with any EEG dataset, e.g. filter 1–50 Hz (**Tools → Filter data → Basic FIR filter**), reject bad data automatically (**Tools → Reject data using Clean Rawdata and ASR**), or run ICA (**Tools → Run ICA**).
 4. Flag bad channels with the trained classifiers: import with `EEG = import_muse(filepath, 'detectBadChan');`, or on an already imported EEG run `[badChan, badChanLabels] = scan_channels(EEG, 0.5, 1);` (see next section).
 5. Analyze heart signals: if you imported the PPG channel (Muse 2/S recorded with Muse Direct) or recorded ECG separately, use the [BrainBeats](https://github.com/amisepa/BrainBeats) EEGLAB plugin to process heartbeat-evoked potentials (HEP), extract EEG and HRV features (SDNN, RMSSD, LF/HF power...), remove heart artifacts from the EEG, and compute brain-heart coherence: [BrainBeats tutorial](https://eeglab.org/plugins/BrainBeats).
 
@@ -70,9 +70,15 @@ EEG = import_muse(filepath, 'detectBadChan');
 
 The input EEG must be raw (no prior preprocessing); it is band-pass filtered 1-50 Hz on the fly for classification (the output EEG remains raw). `maxTol` (second argument, default 0.5) is the portion of bad 5-s windows tolerated before a channel is flagged; with the default, up to half of the windows may be bad before the channel is removed - set it lower (e.g. 0.33) to be stricter.
 
-For each 5-s window, features are computed (RMS, SNR, low-frequency power, plus kurtosis and high-frequency power for the posterior channels), selected as most important by a Random Forest during model training.
+For each 5-s window, features are computed in the time, frequency, and nonlinear domains (RMS, SNR, low-frequency power, kurtosis, high-frequency power...), selected as most important by a Random Forest during model training.
 
-Various ML models were trained and tested (decision trees, logistic regression, LDA, SVM, Naive Bayes, neural networks) with PCA dimension reduction, hyperparameter tuning, and 5-fold cross-validation. Training used 80% of the dataset; the remaining 20% (different individuals) was used for testing. The best models reached 93.5% accuracy for the frontal channels (logistic regression) and 91.4% for the posterior channels (decision tree). The classifiers are conservative: on clean recordings they can still flag a channel, so verify the results with `scan_channels(EEG, maxTol, 1)` (visualization on) when in doubt.
+### How the models were built and validated
+
+I manually labeled 3,000 30-second EEG segments recorded with MUSE headsets as good or bad, and extracted features in the time, frequency, and nonlinear domains. I then trained an ensemble of machine learning models (decision trees, logistic regression, LDA, SVM, Naive Bayes, neural networks) with feature selection, PCA dimension reduction, hyperparameter tuning, and 5-fold cross-validation (on 80% of the data). The best model was validated on remaining data from 20% (different subjects, to avoid overfitting). The best models reached 93.5% accuracy for the frontal channels (logistic regression) and 91.4% for the posterior channels (decision tree). The classifiers are conservative: on clean recordings they can still flag a channel, so verify the results with `scan_channels(EEG, maxTol, 1)` (visualization on) when in doubt.
+
+Example output on a real recording (muse-direct2): the AF8 channel is flagged bad (drawn in red by the built-in visualization) and removed, while the three good channels are kept:
+
+![Bad channel flagged in red](docs/badchan_example.png)
 
 ## Reference
 

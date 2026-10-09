@@ -63,7 +63,7 @@ if isempty(vis)
 end
 
 % Filter EEG signal (same as for training of classifiers)
-EEG = pop_eegfiltnew(EEG,'locutoff',1,'hicutoff',50);    
+EEG = pop_eegfiltnew(EEG,'locutoff',1,'hicutoff',50);   % same 1-50 Hz band as used for training    
 
 % Design filter for SNR feature
 b = design_fir(100,[2*[0 45 50]/EEG.srate 1],[1 1 0 0]);

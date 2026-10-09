@@ -25,7 +25,8 @@ EEG = import_muse;                               % GUI: select a file and the op
 EEG = import_muse(filepath);                     % import EEG (command line)
 EEG = import_muse(filepath, 'optics');           % EEG + Athena fNIRS optical data
 EEG = import_muse(filepath, 'acc', 'gyr', 'aux', 'ppg'); % import everything
-EEG = import_muse(filepath, 'detectBadChan');    % EEG + flag/remove bad channels
+EEG = import_muse(filepath, 'detectBadChan');    % EEG + flag bad channels (reported, not removed)
+EEG = import_muse(filepath, 'reref');            % EEG + frontal channels re-referenced to linked mastoids (TP9+TP10)
 ```
 
 Supported file formats (auto-detected):
@@ -68,7 +69,7 @@ EEG = import_muse(filepath, 'detectBadChan');
 [badChan, badChanLabels] = scan_channels(EEG, 0.5, 1);
 ```
 
-The input EEG must be raw (no prior preprocessing); it is band-pass filtered 1-50 Hz on the fly for classification (the output EEG remains raw). `maxTol` (second argument, default 0.5) is the portion of bad 5-s windows tolerated before a channel is flagged; with the default, up to half of the windows may be bad before the channel is removed - set it lower (e.g. 0.33) to be stricter.
+The input EEG must be raw (no prior preprocessing); it is band-pass filtered 1-50 Hz on the fly for classification (the output EEG remains raw). `maxTol` (second argument, default 0.5) is the portion of bad 5-s windows tolerated before a channel is flagged; with the default, up to half of the 5-s windows may be bad before the channel is flagged - set it lower (e.g. 0.33) to be stricter.
 
 For each 5-s window, features are computed in the time, frequency, and nonlinear domains (RMS, SNR, low-frequency power, kurtosis, high-frequency power...), selected as most important by a Random Forest during model training.
 
@@ -76,9 +77,15 @@ For each 5-s window, features are computed in the time, frequency, and nonlinear
 
 I manually labeled 3,000 30-second EEG segments recorded with MUSE headsets as good or bad, and extracted features in the time, frequency, and nonlinear domains. I then trained an ensemble of machine learning models (decision trees, logistic regression, LDA, SVM, Naive Bayes, neural networks) with feature selection, PCA dimension reduction, hyperparameter tuning, and 5-fold cross-validation (on 80% of the data). The best model was validated on remaining data from 20% (different subjects, to avoid overfitting). The best models reached 93.5% accuracy for the frontal channels (logistic regression) and 91.4% for the posterior channels (decision tree). The classifiers are conservative: on clean recordings they can still flag a channel, so verify the results with `scan_channels(EEG, maxTol, 1)` (visualization on) when in doubt.
 
-Example output on a real recording (muse-direct2): the AF8 channel is flagged bad (drawn in red by the built-in visualization) and removed, while the three good channels are kept:
+Flagged channels are reported, not removed automatically: check them visually (e.g. Plot > Channel data scroll; the classifiers run on the data band-pass filtered 1-50 Hz on the fly, the same filter as used for training), remove the channels you confirm are bad (e.g. `EEG = pop_select(EEG, 'nochannel', {'AF7'});`), and re-run or re-reference as needed.
+
+Example output on a real eyes-open recording (fa5b9609ba, muse_biosemi study): the AF7 channel is flagged bad (drawn in red by the built-in visualization) while TP9, AF8, and TP10 are kept:
 
 ![Bad channel flagged in red](docs/badchan_example.png)
+
+### Frontal re-referencing to linked mastoids
+
+`EEG = import_muse(filepath, 'reref');` (or add `'reref'` to any other option) re-references the frontal channels (AF7, AF8) to the linked mastoids (average of TP9 and TP10), the standard reference for frontal alpha asymmetry with 4-channel headsets. Before re-referencing, both TP channels must pass the trained classifiers: if a TP channel is flagged bad (or missing), the import reports that linked-mastoids re-referencing is **not possible for this dataset** and leaves the data unreferenced, since a bad mastoid reference would corrupt the frontal signals. Check the flagged channels visually, remove those you confirm are bad, and re-import with `'reref'`. The TP channels keep their own raw signals in the output.
 
 ## Reference
 
@@ -92,6 +99,7 @@ If this plugin does not work for you, see also this other independent implementa
 
 ## Version history
 
+- v2.3 - added linked-mastoids re-referencing option ('reref'): AF7/AF8 re-referenced to the average of TP9 and TP10, after both TP channels pass the trained classifiers
 - v2.2 - Muse S Athena support (packet, OSC log, EEG-only, and optics-only exports; 4/8/16 fNIRS optical channels); rewritten file parsing and sampling rate detection (fixed Mind Monitor rate errors); hour rollover support for legacy MindMonitor files; fixed command-line import crash, classifier output handling, bad-channel flagging with extra channels, and ACC/GYR amplitude scaling
 - v2.1 - bug fixes
 - v1.1 - added trained classifiers to flag bad channels

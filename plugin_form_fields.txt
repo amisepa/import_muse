@@ -1,0 +1,14 @@
+# Values to paste into https://sccn.ucsd.edu/eeglab/plugin_uploader/upload_form.php
+
+Plugin name: import_muse
+Version: 2.2
+Description: EEGLAB plugin to import Muse .csv recordings (Mind Monitor, Muse Direct, and Muse Lab/OpenMuse Apps) from Muse 1/2016, Muse 2, Muse S, and Muse S Athena (including fNIRS optical data). Flags bad channels using trained ML classifiers.
+Institution: (yours — e.g. CerCo, CNRS / UCSC)
+Tags: import, muse
+Contact name: Cedric Cannard
+Contact email: ccannard@protonmail.com
+Documentation URL: https://github.com/amisepa/import_muse
+Release notes: v2.2 - Muse S Athena support (packet, OSC log, EEG-only, optics-only; fNIRS); rewritten parsing and sample-rate detection; hour-rollover and ACC/GYR scaling fixes; bad-channel detection fixes; GUI dialog fix.
+GitHub URL: https://github.com/amisepa/import_muse
+This is a critical update: leave unchecked
+Plugin ZIP: import_muse2.2.zip

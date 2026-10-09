@@ -15,7 +15,9 @@
 %   'ppg'            - Import photoplethysmogram data (default OFF = 0; Muse Direct recordings only)
 %   'aux'            - Import auxiliary channel data (default OFF = 0; MindMonitor recordings only)
 %   'optics'         - Import optical fNIRS data (default OFF = 0; Muse S Athena only)
-%   'detectBadChan'  - Detect and remove bad channels using the trained classifiers
+%   'detectBadChan'  - Detect bad channels using the trained classifiers (flags only, no removal)
+%   'reref'          - Re-reference AF7/AF8 to linked mastoids (TP9+TP10 average);
+%                      possible only when both TP channels pass the classifiers
 %
 % Outputs:
 %   EEG     - Data in EEGLAB structure format containing signal from each
@@ -195,7 +197,7 @@ end %% end classic-file parsing
 
 %% Optional inputs (other signals)
 
-params = struct('acc', 0, 'gyr', 0, 'ppg', 0, 'aux', 0, 'optics', 0);
+params = struct('acc', 0, 'gyr', 0, 'ppg', 0, 'aux', 0, 'optics', 0, 'reref', 0);
 
 %GUI
 if nargin < 1
@@ -206,9 +208,10 @@ if nargin < 1
         {'style' 'checkbox' 'string' 'Import Photoplethysmogram (PPG; Muse 2 and S recorded with Muse Direct only)' 'tag' 'ppg' 'value' 0 'enable' 'on' } ...
         {'style' 'checkbox' 'string' 'Import Auxiliary (AUX; Muse 1 recorded with MindMonitor only)' 'tag' 'aux' 'value' 0 'enable' 'on' } ...
         {'style' 'checkbox' 'string' 'Import optical fNIRS data (OPTICS; Muse S Athena only)' 'tag' 'optics' 'value' 0 'enable' 'on' } ...
+        {'style' 'checkbox' 'string' 'Re-reference frontal channels to linked mastoids (TP9+TP10; checks TP channels first)' 'tag' 'reref' 'value' 0 'enable' 'on' } ...
         {} ...
         };
-    uigeom = { 1 1 1 1 1 1 1 };
+    uigeom = { 1 1 1 1 1 1 1 1 };
     opt = inputgui(uigeom, uilist, 'pophelp(''import_muse'')', ['Muse data recorded with ' rec_type]);
     if isempty(opt)
         EEG = []; com = '';   % user cancelled
@@ -220,6 +223,7 @@ if nargin < 1
     params.ppg = opt{3};
     params.aux = opt{4};
     params.optics = opt{5};
+    params.reref = opt{6};
 else
     opt = varargin;
     for iOpt = 1:length(opt)
@@ -229,6 +233,8 @@ else
             case 'ppg', params.ppg = 1;
             case 'aux', params.aux = 1;
             case 'optics', params.optics = 1;
+            case 'reref', params.reref = 1;
+            case {'rerefmastoids'}, params.reref = 1;
             case 'detectbadchan'  % handled at the end of the import
             otherwise
                 warning('Unknown option ''%s'' ignored (use acc, gyr, ppg, aux, optics, detectBadChan)', string(opt{iOpt}));
@@ -696,25 +702,57 @@ disp('MUSE data were imported into EEGLAB.');
 % done on the fly here (on the 4 EEG channels only), or accuracy may drop.
 
 detectBadChan = any(strcmpi(varargin, 'detectBadChan'));
+doReref = any(strcmpi(varargin, 'reref')) || any(strcmpi(varargin, 'rerefMastoids'));
 
-if detectBadChan
+if detectBadChan || doReref
+    % Classifiers need only the 4 Muse EEG channels (raw, filtered 1-50 Hz on the fly)
     disp('Scanning file to detect bad channels...')
     if EEG.nbchan < 4
         warning('Bad-channel detection requires the 4 Muse EEG channels; skipping.');
+        badChanLabels = {};
     else
         maxTol = .5;    % max portion of bad 5-s windows to tolerate before flagging a channel
-        vis = 0;        % set to 1 inside scan_channels call to visualize flagged channels
-        TMPEEG = pop_select(EEG, 'channel', 1:4);   % classifiers need only the 4 EEG channels
+        vis = 0;        % set to 1 inside the scan_channels call to visualize flagged channels
+        TMPEEG = pop_select(EEG, 'channel', 1:4);
         [badChan, badChanLabels] = scan_channels(TMPEEG, maxTol, vis);
-        if any(badChan)
-            EEG = pop_select(EEG,'nochannel',badChanLabels);
-        end
+    end
+    if ~isempty(badChanLabels)
+        fprintf('Channel(s) flagged as bad by the trained classifiers: %s\n', strjoin(string(badChanLabels), ', '));
+        fprintf('These channels were NOT removed from the dataset. Verify visually (e.g. Plot > Channel data scroll) or re-import with their indices removed via pop_select(EEG, ''nochannel'', {%s}).\n', strjoin(string(badChanLabels), ', '));
+    else
+        disp('No bad channels detected by trained classifier.');
+    end
+end
+
+%% Linked-mastoids re-referencing of the frontal channels
+% AF7 and AF8 are re-referenced to the linked mastoids (average of TP9 and TP10).
+% Both TP channels must pass the trained classifiers first; if a TP channel is
+% flagged (or missing), re-referencing is NOT applied and the user is told why.
+
+if doReref
+    tp9i = find(strcmpi({EEG.chanlocs.labels}, 'TP9'));
+    tp10i = find(strcmpi({EEG.chanlocs.labels}, 'TP10'));
+    af7i = find(strcmpi({EEG.chanlocs.labels}, 'AF7'));
+    af8i = find(strcmpi({EEG.chanlocs.labels}, 'AF8'));
+    if ~exist('badChanLabels', 'var'), badChanLabels = {}; end   % reref alone w/o detectBadChan scans above too
+    tpFlagged = any(strcmpi(badChanLabels, 'TP9')) || any(strcmpi(badChanLabels, 'TP10'));
+    if isempty(tp9i) || isempty(tp10i) || tpFlagged
+        disp('Linked-mastoids re-referencing NOT possible for this dataset: TP9 and/or TP10 is missing');
+        disp('or flagged bad by the classifiers. Confirm the flags visually, remove bad channels, re-import. Data left unreferenced.');
+    elseif isempty(af7i) && isempty(af8i)
+        disp('Linked-mastoids re-referencing skipped (no frontal channel left in the dataset).');
+    else
+        refSignal = (EEG.data(tp9i,:) + EEG.data(tp10i,:)) / 2;
+        if ~isempty(af7i), EEG.data(af7i,:) = EEG.data(af7i,:) - refSignal; end
+        if ~isempty(af8i), EEG.data(af8i,:) = EEG.data(af8i,:) - refSignal; end
+        EEG.ref = 'linked mastoids (average of TP9 and TP10)';
+        disp('Frontal channel(s) (AF7, AF8) re-referenced to linked mastoids (TP9+TP10).');
     end
 end
 
 %% Command history
 if nargin < 1
-    flagNames = {'acc' 'gyr' 'ppg' 'aux' 'optics'};
+    flagNames = {'acc' 'gyr' 'ppg' 'aux' 'optics' 'reref'};
     flags = [params.acc params.gyr params.ppg params.aux params.optics];
     optFlags = flagNames(flags == 1);
 else

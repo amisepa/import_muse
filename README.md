@@ -79,7 +79,7 @@ I manually labeled 3,000 30-second EEG segments recorded with MUSE headsets as g
 
 Flagged channels are reported, not removed automatically: check them visually (e.g. Plot > Channel data scroll; the classifiers run on the data band-pass filtered 1-45 Hz on the fly (the training filter, with a 45 Hz low-pass that excludes European 50 Hz line noise), the same filter as used for training), remove the channels you confirm are bad (e.g. `EEG = pop_select(EEG, 'nochannel', {'AF7'});`), and re-run or re-reference as needed.
 
-Example output on a real eyes-open rest recording (Muse IDL study): the AF7 channel (red, ~116 uV RMS after 1-45 Hz filtering) is flagged bad by the classifiers while the three low-RMS channels TP9 (7 uV), AF8 (4 uV), and TP10 (9 uV) are kept.
+Example output on a real rest recording (Muse IDL study): the AF7 channel (red, 133 uV RMS after 1-45 Hz filtering, noisy from ~6 s on) is flagged bad by the classifiers while TP9, AF8, and TP10 are kept.
 
 ![Bad channel flagged in red](docs/badchan_example.png)
 

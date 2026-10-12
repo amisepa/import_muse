@@ -26,7 +26,6 @@ EEG = import_muse(filepath);                     % import EEG (command line)
 EEG = import_muse(filepath, 'optics');           % EEG + Athena fNIRS optical data
 EEG = import_muse(filepath, 'acc', 'gyr', 'aux', 'ppg'); % import everything
 EEG = import_muse(filepath, 'detectBadChan');    % EEG + flag bad channels (reported, not removed)
-EEG = import_muse(filepath, 'reref');            % EEG + frontal channels re-referenced to linked mastoids (TP9+TP10)
 ```
 
 Supported file formats (auto-detected):
@@ -83,10 +82,6 @@ Example output on a real rest recording (Muse IDL study): the AF7 channel (red, 
 
 ![Bad channel flagged in red](docs/badchan_example.png)
 
-### Frontal re-referencing to linked mastoids
-
-`EEG = import_muse(filepath, 'reref');` (or add `'reref'` to any other option) re-references the frontal channels (AF7, AF8) to the linked mastoids (average of TP9 and TP10), the standard reference for frontal alpha asymmetry with 4-channel headsets. Before re-referencing, both TP channels must pass the trained classifiers: if a TP channel is flagged bad (or missing), the import reports that linked-mastoids re-referencing is **not possible for this dataset** and leaves the data unreferenced, since a bad mastoid reference would corrupt the frontal signals. Check the flagged channels visually, remove those you confirm are bad, and re-import with `'reref'`. The TP channels keep their own raw signals in the output.
-
 ## Reference
 
 If you use this plugin, please cite the signal validation study:
@@ -99,7 +94,6 @@ If this plugin does not work for you, see also this other independent implementa
 
 ## Version history
 
-- v2.3 - added linked-mastoids re-referencing option ('reref'): AF7/AF8 re-referenced to the average of TP9 and TP10, after both TP channels pass the trained classifiers
 - v2.2 - Muse S Athena support (packet, OSC log, EEG-only, and optics-only exports; 4/8/16 fNIRS optical channels); rewritten file parsing and sampling rate detection (fixed Mind Monitor rate errors); hour rollover support for legacy MindMonitor files; fixed command-line import crash, classifier output handling, bad-channel flagging with extra channels, and ACC/GYR amplitude scaling
 - v2.1 - bug fixes
 - v1.1 - added trained classifiers to flag bad channels

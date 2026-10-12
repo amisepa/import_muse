@@ -30,7 +30,6 @@ tests = {
     'muse-direct1.csv'              {'acc' 'gyr' 'ppg'}
     'muse-direct2.csv'              {}
     'muse-direct2.csv'              {'detectBadChan'}
-    'muse-direct2.csv'              {'reref'}
     'athena_eeg_export.csv'         {}
     'athena_musedirect_packet.csv'  {}
     'athena_musedirect_packet.csv'  {'optics'}
